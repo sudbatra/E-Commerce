@@ -1,35 +1,63 @@
 const router = require('express').Router();
 const { Product, Category, Tag, ProductTag } = require('../../models');
-
-
+const { post } = require('./tag-routes');
 
 
 router.get('/', (req, res) => {
 
-  Product.findAll({include:[{model:Category},{model:Tag}]}).then((newProduct)=>{
-
-   res.status(200).json(newProduct)
+  Product.findAll({
+    include: [
+      {
+        model: Category
+      },
+      {
+        model: Tag,
+        as: 'tags'
+      }
+    ]
   })
- 
+    .then(dbPostData => res.json(dbPostData))
+    .catch(err => {
+      console.log(err);
+      res.status(500).json(err);
+    });
 });
-
 
 router.get('/:id', (req, res) => {
 
-
-  Product.findByPk(req.params.id,{include:[{model:Category},{model:Tag}]}).then((product)=>{
-    res.json(product);
+  Product.findOne({
+    where: {
+      id: req.params.id
+    },
+    include: [
+      {
+        model: Category
+      },
+      {
+        model: Tag,
+        as: 'tags'
+      }
+    ]
   })
-
+    .then(dbPostData => {
+      if (!dbPostData) {
+        res.status(404).json({ message: 'No product found with this id' });
+        return;
+      }
+      res.json(dbPostData);
+    })
+    .catch(err => {
+      console.log(err);
+      res.status(500).json(err);
+    });
 });
 
 
 router.post('/', (req, res) => {
 
-    
   Product.create(req.body)
     .then((product) => {
-   
+      
       if (req.body.tagIds.length) {
         const productTagIdArr = req.body.tagIds.map((tag_id) => {
           return {
@@ -64,7 +92,7 @@ router.put('/:id', (req, res) => {
     .then((productTags) => {
 
       const productTagIds = productTags.map(({ tag_id }) => tag_id);
-
+  
       const newProductTags = req.body.tagIds
         .filter((tag_id) => !productTagIds.includes(tag_id))
         .map((tag_id) => {
@@ -73,7 +101,7 @@ router.put('/:id', (req, res) => {
             tag_id,
           };
         });
-   
+
       const productTagsToRemove = productTags
         .filter(({ tag_id }) => !req.body.tagIds.includes(tag_id))
         .map(({ id }) => id);
@@ -86,20 +114,29 @@ router.put('/:id', (req, res) => {
     })
     .then((updatedProductTags) => res.json(updatedProductTags))
     .catch((err) => {
-  
+
       res.status(400).json(err);
     });
 });
 
 router.delete('/:id', (req, res) => {
 
-  Product.destroy({where:{
-    id: req.params.id
-  }}).then(()=>{
-
-res.json(`${req.params.id}ID deleted`)
-
+  Product.destroy({
+    where: {
+      id: req.params.id
+    }
   })
+    .then(dbPostData => {
+      if (!dbPostData) {
+        res.status(404).json({ message: 'No product found with this id' });
+        return;
+      }
+      res.json(dbPostData);
+    })
+    .catch(err => {
+      console.log(err);
+      res.status(500).json(err);
+    });
 });
 
 module.exports = router;

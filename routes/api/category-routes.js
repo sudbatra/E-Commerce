@@ -1,56 +1,106 @@
 const router = require('express').Router();
-const { Categpry, Product } = require('../../models');
+const { Category, Product } = require('../../models');
 
-// THe `/api/categories` endpoint
 
-router.get('/', async (req, res) => {
-    // finding all cateogories
-    const category = await Category.findAll({
-        include: {moduel:Product}
+
+router.get('/', (req, res) => {
+
+  Category.findAll({
+    include: [
+      {
+        model: Product,
+        attributes: ['product_name', 'price']
+      }
+    ]
+  })
+    .then(dbPostData => res.json(dbPostData))
+    .catch(err => {
+      console.log(err);
+      res.status(500).json(err);
     });
-
-    return res.status(200).json(category)
-    // be sure to include its associated products
 });
 
 router.get('/:id', (req, res) => {
-    // finding one category by its 'id' value
-    Category.findByPk(req.params.id,{include:{model:Product}}).then({category}=>{
 
-        res.status(200).json(category);
+  Category.findOne({
+    where: {
+      id: req.params.id
+    },
+    include: [
+      {
+        model: Product,
+        attributes: ['product_name', 'price']
+      }
+    ]
+  })
+    .then(dbPostData => {
+      if (!dbPostData) {
+        res.status(404).json({ message: 'No category found with this id' });
+        return;
+      }
+      res.json(dbPostData);
     })
-    // be sure to include its associated Products
+    .catch(err => {
+      console.log(err);
+      res.status(500).json(err);
+    });
 });
 
-router.post('/', async(req, res) => {
-    // create a new category
-    const.newCat= await Categpry.create({
-        category_name: req.body.category_name
-    })
-    return res.json(newCat)
+router.post('/', (req, res) => {
 
+  Category.create({
+    category_name: req.body.category_name
+  })
+    .then(dbPostData => res.json(dbPostData))
+    .catch(err => {
+      console.log(err);
+      res.status(500).json(err);
+    });
 });
 
-router.put('/:id', async(req, res) => {
-    // update a category by its 'id' value
-    const upCat = await Category.update({
-        category_name: req.body.category_name
-    },{
-        where:{
-            id:req.params.id
-        }
+router.put('/:id', (req, res) => {
+
+  Category.update(
+    {
+      category_name: req.body.category_name
+    },
+    {
+      where: {
+        id: req.params.id
+      }
+    }
+  )
+    .then(dbPostData => {
+      if (!dbPostData) {
+        res.status(404).json({ message: 'No category found with this id' });
+        return;
+      }
+      res.json(dbPostData);
     })
-    return res.json({
-        id:req.params.id,
-        category_name: req.body.category_name
-    })
+    .catch(err => {
+      console.log(err);
+      res.status(500).json(err);
+    });
 });
 
-router.delete('/:id', async(req, res) => {
-    // delete a category by its 'id' value
-    const delCat = await Categpry.destroy({where:{ id: req.params.id} });
+router.delete('/:id', (req, res) => {
 
-    return res.send(`Category destroyed ID:${req.params.id}`)
+  Category.destroy({
+    where: {
+      id: req.params.id
+    }
+  })
+    .then(dbPostData => {
+      if (!dbPostData) {
+        res.status(404).json({ message: 'No category found with this id' });
+        return;
+      }
+      res.json(dbPostData);
+    })
+    .catch(err => {
+      console.log(err);
+      res.status(500).json(err);
+    });
 });
 
 module.exports = router;
